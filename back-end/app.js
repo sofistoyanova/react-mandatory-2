@@ -1,7 +1,9 @@
 const express = require('express')
 const app = express()
 const userRoute = require('./routes/users')
+const cors = require('cors')
 
+app.use(cors())
 app.use(express.json())
 app.use(userRoute)
 
@@ -21,7 +23,7 @@ const port = process.env.PORT || 9090;
 
 app.listen(port, (err) => {
     if(err) {
-        console.log('Error running Express')
+        return console.log('Error running Express')
     }
     console.log('Server is running on port: ', port)
 })

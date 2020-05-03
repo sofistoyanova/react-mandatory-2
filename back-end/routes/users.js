@@ -47,25 +47,25 @@ router.post('/users/register', async (req, res) => {
     const emailPatternMatch = email.match(emailPattern)
 
     if(!username || !email || !password || !confirmPassword || !firstName || !lastName) {
-        return res.status(400).send({message: 'Fillin all user details'})
+        return res.status(400).send({status: 400, message: 'Fillin all user details'})
     } else if(password.length < 7) {
-        return res.status(400).send({message: 'Password should be at least 7 characters'})
+        return res.status(400).send({status: 400, message: 'Password should be at least 7 characters'})
     } else if (password !== confirmPassword) {
-        return res.status(400).send({message: 'Passwords did not match'})
+        return res.status(400).send({status: 400, message: 'Passwords did not match'})
     } else if(!emailPatternMatch) {
-        return res.status(400).send({message: 'Email is not in valid format'})
+        return res.status(400).send({status: 400, message: 'Email is not in valid format'})
     } else {
         try {
             // Check if username exists
             const existingUsername = await User.query().select().where({ username })
             if(existingUsername[0]) {
-                return res.status(400).send({message: 'Username already exists'})
+                return res.status(400).send({status: 400, message: 'Username already exists'})
             } 
 
             // Check if email exists
             const existingEmail = await User.query().select().where({ email })
             if(existingEmail[0]) {
-                return res.status(400).send({message: 'Email already exists'})
+                return res.status(400).send({status: 400, message: 'Email already exists'})
             } 
 
             const hashedPassword = await bcrypt.hash(password, 3)
@@ -77,9 +77,9 @@ router.post('/users/register', async (req, res) => {
                 last_name: lastName
             })
 
-            res.send(user)
+            res.send({status: 200})
         } catch(err) {
-            res.status(500).send({message: 'Database error'})
+            res.status(500).send({status: 500, message: 'Database error'})
         }
 
             // const userExists = await User.query().select().where({ username: username }).limit(1)
@@ -108,7 +108,7 @@ router.post('/users/forgot-password', async (req, res) => {
     const { email } = req.body
     
     if(!email) {
-        return res.status(400).send({message: 'Please enter an email'})
+        return res.status(400).send({status: 400, message: 'Please enter an email'})
     }
 
     try {
@@ -116,7 +116,7 @@ router.post('/users/forgot-password', async (req, res) => {
         user = users[0]
 
         if(!user){
-            return res.status(400).send({message: 'Email does not exists in the system'})
+            return res.status(400).send({status: 404, message: 'Email does not exists in the system'})
         }
 
         const userId = user.id

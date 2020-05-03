@@ -5,11 +5,30 @@ import {Link } from "react-router-dom"
 function Signup () {
     const [formData, setFormData] = useState({})
 
+    useEffect(() => {
+        const requestOptions = {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(formData)
+        }
+        fetch('http://localhost:9090/users/register', requestOptions)
+            .then(response => response.json())
+            .then(data => {
+                if(data.status == 200) {
+                    return console.log('successfull')
+                }
+                console.log(data.message)
+            } )
+            .catch(err => console.log(err))
+    })
+
     const handleFormSubmit = (event) => {
         event.preventDefault()
         const form = document.querySelector('form')
         const data = Object.fromEntries(new FormData(form).entries())
-        console.log(data)
+        setFormData(data)
     }
 
     return (
