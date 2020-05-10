@@ -4,14 +4,13 @@ const Address = require('../models/Address')
 const ForgottenPassword = require('../models/ForgottenPassword')
 const bcrypt = require('bcrypt')
 const jwt = require('jsonwebtoken')
-const auth = require('../middleware/auth')
 const sendEmail = require('./modules/email')
 
 router.post('/users/login', async (req, res) => {
     const { username, password } = req.body
 
     if(!username || !password) {
-        return res.status(400).send({message: 'Enter username and password'})
+        return res.status(400).send({status: 400, message: 'Enter username and password'})
     }
 
     try {
@@ -19,21 +18,19 @@ router.post('/users/login', async (req, res) => {
         const users = await User.query().select().where({username: username}).limit(1)
         const user = users[0]
         if(!user) {
-            return res.status(404).send({message: 'User not found'})
+            return res.status(404).send({status: 404, message: 'User not found'})
         }
         
         // Compare passwords
         const doPasswordsMatch = await bcrypt.compare(password, user.password)
         if(!doPasswordsMatch) {
-            return res.status(400).send({message: 'Password did not match'})
+            return res.status(400).send({status: 400, message: 'Password did not match'})
         }
-        
-        // Generate token
-        const token = jwt.sign({ username }, 'createjwttoken')
 
-        req.token = token
-
-        res.send({user, token})
+        req.session.userId = user.id
+        req.session.save()
+        console.log(req.session)
+        res.send({status: 200, userId: user.id})
     } catch(err) {
         console.log(err)
         res.status(400).send()
@@ -48,6 +45,12 @@ router.post('/users/register', async (req, res) => {
 
     if(!username || !email || !password || !confirmPassword || !firstName || !lastName) {
         return res.status(400).send({status: 400, message: 'Fillin all user details'})
+    } else if(firstName.length < 2){
+        return res.status(400).send({status: 400, message: 'First name should contain at lest 2 characters'})
+    } else if(lastName.length < 2) {
+        return res.status(400).send({status: 400, message: 'Last name should contain at lest 2 characters'})
+    }else if(username.length < 4) {
+        return res.status(400).send({status: 400, message: 'Username should contain at lest 4 characters'})
     } else if(password.length < 7) {
         return res.status(400).send({status: 400, message: 'Password should be at least 7 characters'})
     } else if (password !== confirmPassword) {
@@ -77,31 +80,23 @@ router.post('/users/register', async (req, res) => {
                 last_name: lastName
             })
 
-            res.send({status: 200})
+            req.session.userId = user.id
+            req.session.save()
+            res.send({status: 200, userId: user.id})
         } catch(err) {
             res.status(500).send({status: 500, message: 'Database error'})
         }
-
-            // const userExists = await User.query().select().where({ username: username }).limit(1)
-            // if(userExists) {
-            //     console.log(userExists)
-            // }
-
-            // if(userExists) {
-            //     return res.status(400).send({message: 'Username already exists'})
-            // }
-
-            // const newUser = await User.query().insert({ 
-            //     username,
-            //     password: hashedPassword
-            // });
-            // res.send(newUser)
     }
 
 })
 
-router.get('/users/profile', auth, (req, res) => {
-    res.send('profile')
+router.get('/users/profile/:userId', async (req, res) => {
+    console.log('sesion: ', req.session)
+    const userId = req.params.userId
+    const aUser = await User.query().select().where({id: userId})
+    const user = aUser[0]
+    const firstName = user.first_name
+    res.send({ firstName })
 })
 
 router.post('/users/forgot-password', async (req, res) => {
